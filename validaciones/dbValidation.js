@@ -3,35 +3,29 @@ const mysql = require('mysql2/promise');
 
 const validateDatabase = async () => {
   console.log('Iniciando validación de base de datos...');
-  console.log('Variables de entorno disponibles:', {
-    MYSQLHOST: process.env.MYSQLHOST ? 'definido' : 'no definido',
-    MYSQLPORT: process.env.MYSQLPORT ? 'definido' : 'no definido',
-    MYSQLUSER: process.env.MYSQLUSER ? 'definido' : 'no definido',
-    MYSQLDATABASE: process.env.MYSQLDATABASE ? 'definido' : 'no definido',
-    // No mostramos MYSQLPASSWORD por seguridad
-  });
   
   const dbConfig = {
-    host: process.env.MYSQLHOST,
-    port: parseInt(process.env.MYSQLPORT),
-    user: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD,
-    database: process.env.MYSQLDATABASE,
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     connectTimeout: 20000,
     multipleStatements: true
   };
 
-  console.log('Intentando conectar con:', {
+  console.log('Configuración de conexión:', {
     host: dbConfig.host,
     port: dbConfig.port,
     user: dbConfig.user,
     database: dbConfig.database
+    // No mostramos password por seguridad
   });
 
   try {
+    // Verificar que tenemos todas las variables necesarias
     if (!dbConfig.host || !dbConfig.port || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
-      console.error('Variables disponibles en el entorno:', process.env);
-      throw new Error('Faltan variables de conexión necesarias de Railway MySQL');
+      throw new Error('Faltan variables de conexión necesarias para MySQL');
     }
 
     console.log('Intentando conectar a la base de datos...');
@@ -61,7 +55,6 @@ const validateDatabase = async () => {
     throw error;
   }
 };
-
 const CREATE_TABLES_SQL = `
   SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
   START TRANSACTION;
