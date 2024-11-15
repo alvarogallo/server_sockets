@@ -82,6 +82,15 @@ COMMIT;
 `;
 
 const validateDatabase = async () => {
+  console.log('Iniciando validación de base de datos...');
+  console.log('Variables de entorno cargadas:', {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    // No mostramos password por seguridad
+  });
+
   try {
     // Verificar variables de entorno
     const requiredEnvVars = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
@@ -91,39 +100,54 @@ const validateDatabase = async () => {
       throw new Error(`Faltan variables de entorno: ${missingEnvVars.join(', ')}`);
     }
 
+    console.log('Intentando conectar a la base de datos...');
+    
     const config = {
       host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT),
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      connectTimeout: 10000,
-      multipleStatements: true // Importante para ejecutar múltiples queries
+      connectTimeout: 20000, // 20 segundos
+      multipleStatements: true
     };
 
     // Crear conexión
     const connection = await mysql.createConnection(config);
-    
-    console.log(`Base de datos "${config.database}" encontrada en ${config.host}:${config.port}`);
+    console.log('Conexión establecida exitosamente');
 
     // Crear tablas
+    console.log('Iniciando creación/verificación de tablas...');
     try {
       await connection.query(CREATE_TABLES_SQL);
       console.log('Tablas creadas/verificadas exitosamente');
     } catch (error) {
-      console.error('Error al crear las tablas:', error.message);
+      console.error('Error al crear las tablas:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno
+      });
       throw error;
     }
 
     // Verificar la conexión con una consulta simple
+    console.log('Verificando conexión con query de prueba...');
     await connection.query('SELECT 1');
-    
-    // Cerrar la conexión
+    console.log('Query de prueba exitosa');
+
+    // Cerrar conexión
     await connection.end();
+    console.log('Conexión cerrada correctamente');
     
     return true;
   } catch (error) {
-    console.error('Error en la validación de la base de datos:', error);
+    console.error('Error detallado:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
     throw error;
   }
 };
