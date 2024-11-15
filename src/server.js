@@ -5,8 +5,8 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
-const validarEnviador = require('../validaciones/validar_enviador');
-const validarListener = require('../validaciones/validar_listener');
+// const validarEnviador = require('../validaciones/validar_enviador');
+// const validarListener = require('../validaciones/validar_listener');
 
 const app = express();
 app.use(cors());
@@ -382,22 +382,7 @@ io.on('connection', (socket) => {
     }
   });
 
-//   socket.on('unirseCanal', (data) => {
-//     const { canal, token } = data;
-    
-//     const [error, razon] = validarListener(canal, token);
-    
-//     if (error) {
-//       socket.emit('respuesta', { mensaje: razon });
-//     } else {
-//       socket.join(canal);
-//       subscribedChannels.add(canal);
-//       updateActiveChannel(canal, socket.id, true);
-//       socket.emit('respuesta', { mensaje: `Te has unido al canal: ${canal}` });
-//       console.log(`Socket ${socket.id} se unió al canal ${canal}`);
-//       addLog(canal, 'unirseCanal', { socketId: socket.id });
-//     }
-//   });
+
     socket.on('unirseCanal', async (data) => {
         const { canal, token } = data;
         
