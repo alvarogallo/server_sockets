@@ -1,83 +1,6 @@
 // validaciones/dbValidation.js
 const mysql = require('mysql2/promise');
 
-const CREATE_TABLES_SQL = `
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
-
-CREATE TABLE IF NOT EXISTS \`socket_io_canales\` (
-  \`id\` int(11) NOT NULL AUTO_INCREMENT,
-  \`nombre\` varchar(255) NOT NULL,
-  \`created_at\` timestamp NOT NULL DEFAULT current_timestamp(),
-  \`updated_at\` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  \`dias\` int(11) DEFAULT 90,
-  PRIMARY KEY (\`id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS \`socket_io_conexiones_rechazadas\` (
-  \`id\` int(11) NOT NULL AUTO_INCREMENT,
-  \`canal_id\` int(11) DEFAULT NULL,
-  \`ip\` varchar(45) NOT NULL,
-  \`veces\` int(11) DEFAULT 1,
-  \`created_at\` timestamp NOT NULL DEFAULT current_timestamp(),
-  \`updated_at\` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (\`id\`),
-  KEY \`idx_ip_canal\` (\`ip\`,\`canal_id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS \`socket_io_eventos\` (
-  \`id\` int(11) NOT NULL AUTO_INCREMENT,
-  \`id_canal\` int(11) DEFAULT NULL,
-  \`evento\` varchar(255) NOT NULL,
-  \`created_at\` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (\`id\`),
-  KEY \`id_canal\` (\`id_canal\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS \`socket_io_historial\` (
-  \`id\` int(11) NOT NULL AUTO_INCREMENT,
-  \`id_canal\` int(11) DEFAULT NULL,
-  \`id_evento\` int(11) DEFAULT NULL,
-  \`ip\` varchar(45) NOT NULL,
-  \`mensaje\` text DEFAULT NULL,
-  \`created_at\` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (\`id\`),
-  KEY \`id_canal\` (\`id_canal\`),
-  KEY \`id_evento\` (\`id_evento\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS \`socket_io_ips_validas\` (
-  \`id\` int(11) NOT NULL AUTO_INCREMENT,
-  \`id_canal\` int(11) DEFAULT NULL,
-  \`ip\` varchar(45) NOT NULL,
-  PRIMARY KEY (\`id\`),
-  KEY \`id_canal\` (\`id_canal\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS \`socket_io_tokens\` (
-  \`id\` int(11) NOT NULL AUTO_INCREMENT,
-  \`id_canal\` int(11) DEFAULT NULL,
-  \`token\` varchar(255) NOT NULL,
-  \`permisos\` enum('receptor','emisor') NOT NULL,
-  PRIMARY KEY (\`id\`),
-  KEY \`id_canal\` (\`id_canal\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-ALTER TABLE \`socket_io_eventos\`
-  ADD CONSTRAINT \`socket_io_eventos_ibfk_1\` FOREIGN KEY (\`id_canal\`) REFERENCES \`socket_io_canales\` (\`id\`);
-
-ALTER TABLE \`socket_io_historial\`
-  ADD CONSTRAINT \`socket_io_historial_ibfk_1\` FOREIGN KEY (\`id_canal\`) REFERENCES \`socket_io_canales\` (\`id\`),
-  ADD CONSTRAINT \`socket_io_historial_ibfk_2\` FOREIGN KEY (\`id_evento\`) REFERENCES \`socket_io_eventos\` (\`id\`);
-
-ALTER TABLE \`socket_io_ips_validas\`
-  ADD CONSTRAINT \`socket_io_ips_validas_ibfk_1\` FOREIGN KEY (\`id_canal\`) REFERENCES \`socket_io_canales\` (\`id\`);
-
-ALTER TABLE \`socket_io_tokens\`
-  ADD CONSTRAINT \`socket_io_tokens_ibfk_1\` FOREIGN KEY (\`id_canal\`) REFERENCES \`socket_io_canales\` (\`id\`);
-`;
-
 const INSERT_INITIAL_DATA_SQL = `
 SET FOREIGN_KEY_CHECKS=0;
 
@@ -174,10 +97,13 @@ const validateDatabase = async () => {
     const connection = await mysql.createConnection(dbConfig);
     console.log('Conexión establecida exitosamente');
 
-    // Crear tablas
-    console.log('Iniciando creación de tablas...');
-    await connection.query(CREATE_TABLES_SQL);
-    console.log('Tablas creadas exitosamente');
+    // Verificar si las tablas existen
+    const [tables] = await connection.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = ? 
+      AND table_name LIKE 'socket_io_%'
+    `, [dbConfig.database]);
 
     // Insertar datos iniciales
     console.log('Insertando datos iniciales...');
